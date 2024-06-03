@@ -3,7 +3,7 @@ import json
 from langchain_nvidia_ai_endpoints import ChatNVIDIA
 from dotenv import load_dotenv
 
-# Load NVIDIA API key from environment variables
+# load NVIDIA API key from environment variables
 load_dotenv()
 NVIDIA_API_KEY = os.getenv("NVIDIA_API_KEY")
 
@@ -17,7 +17,7 @@ def initialize_nvidia_api():
 def process_with_nvidia_api(ocr_results):
     llm = initialize_nvidia_api()
 
-    # Preface prompt instructions with a request for more detailed output
+    # preface prompt instructions with a request for more detailed output
     instructions = """
     You are an AI presenter. You will be given a JSON formatted input where each entry represents a slide from a PowerPoint presentation.
     Each slide entry will have a slide number and text content extracted via OCR.
@@ -27,6 +27,7 @@ def process_with_nvidia_api(ocr_results):
     Please expand upon each slide with detailed explanations, historical context, examples, analogies, and any additional context that can make the presentation richer and more informative.
     Break down each point into smaller segments, discussing each aspect thoroughly.
     Be verbose and detailed in your explanations.
+    Your output for presentation_text and slide_number MUST correspond 1:1 with the slide_number from your input. YOU MUST NOT create more slides than there are in the source input.
     Your output should be in JSON format, with each slide's content under a corresponding slide number.
     Example input:
     [
