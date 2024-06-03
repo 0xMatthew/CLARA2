@@ -6,7 +6,7 @@ document.getElementById('upload-form').addEventListener('submit', function(event
     if (file) {
         uploadConnectBackend(file);
     } else {
-        alert('Please select a PowerPoint file to upload.');
+        alert('please select a PowerPoint file to upload.');
     }
 });
 
