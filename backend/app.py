@@ -9,6 +9,7 @@ from PIL import Image
 import logging
 import time
 import json
+from concurrent.futures import ProcessPoolExecutor, as_completed, TimeoutError
 
 # set up basic logging
 logging.basicConfig(level=logging.INFO)
@@ -99,23 +100,39 @@ def process_images(image_folder):
         return None
 
     logging.info(f"processing {len(images)} slides for OCR...")
-    results = []
-    for idx, image in enumerate(images):
-        logging.info(f"processing slide {idx + 1}...")
-        result = perform_ocr(image, idx)
-        results.append({"slide_number": idx + 1, "text": result})
 
-    # write OCR results to easily understandable schema for Mixtral hand off
+    results = []
+    max_workers = min(8, os.cpu_count() - 1)  # limit the number of workers to avoid overwhelming the system
+    with ProcessPoolExecutor(max_workers=max_workers) as executor:
+        futures = {executor.submit(perform_ocr, image, idx): idx for idx, image in enumerate(images)}
+        for future in as_completed(futures):
+            idx = futures[future]
+            try:
+                result = future.result(timeout=60)  # 60 seconds timeout for each OCR task
+                results.append(result)
+                logging.info(f"processed slide {idx + 1}")
+            except TimeoutError:
+                logging.error(f"processing slide {idx + 1} timed out.")
+            except Exception as e:
+                logging.error(f"error processing slide {idx + 1}: {e}")
+
+    results.sort(key=lambda x: x['slide_number'])
+
+    # write OCR results to a JSON file
     output_file_path = os.path.join(app.config['OUTPUT_FOLDER'], f'{uuid.uuid4().hex}.json')
     with open(output_file_path, 'w') as output_file:
         json.dump(results, output_file, indent=4)
 
-    logging.info(f"OCR processing completed. Results saved to {output_file_path}")
+    logging.info(f"OCR processing completed. results saved to {output_file_path}")
     return output_file_path
 
 def perform_ocr(image_path, slide_number):
-    text = pytesseract.image_to_string(Image.open(image_path))
-    return text
+    try:
+        text = pytesseract.image_to_string(Image.open(image_path))
+        return {"slide_number": slide_number + 1, "text": text}
+    except Exception as e:
+        logging.error(f"error performing OCR on slide {slide_number + 1}: {e}")
+        return {"slide_number": slide_number + 1, "text": ""}
 
 if __name__ == '__main__':
     app.run(debug=True, port=5000)
