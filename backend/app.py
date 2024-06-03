@@ -50,10 +50,10 @@ def process_presentation(file_path):
     """converts PowerPoint to images and processes each image with OCR"""
     image_folder = os.path.join(app.config['IMAGE_FOLDER'], uuid.uuid4().hex)
     os.makedirs(image_folder, exist_ok=True)
-    convert_to_images(file_path, image_folder)
+    convert_to_pdf(file_path, image_folder)
     return process_images(image_folder)
 
-def convert_to_images(pptx_path, output_folder):
+def convert_to_pdf(pptx_path, output_folder):
     # strip the original file extension and replace with .pdf
     base_name = os.path.basename(pptx_path)
     pdf_name = base_name.rsplit('.', 1)[0] + '.pdf'
