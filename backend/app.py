@@ -4,11 +4,11 @@ from werkzeug.utils import secure_filename
 import os
 import subprocess
 import uuid
-from concurrent.futures import ProcessPoolExecutor
 import pytesseract
 from PIL import Image
 import logging
 import time
+import json
 
 # set up basic logging
 logging.basicConfig(level=logging.INFO)
@@ -18,6 +18,8 @@ CORS(app)
 
 app.config['UPLOAD_FOLDER'] = 'uploads'
 app.config['IMAGE_FOLDER'] = 'images'
+app.config['OUTPUT_FOLDER'] = 'outputs'
+os.makedirs(app.config['OUTPUT_FOLDER'], exist_ok=True)
 app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16MB limit
 
 @app.route('/')
@@ -39,15 +41,16 @@ def upload_file():
         filename = secure_filename(file.filename)
         file_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
         file.save(file_path)
-        process_presentation(file_path)
-        return jsonify({"message": "File uploaded successfully, processing started."})
-    return jsonify({"error": "Invalid file or no file uploaded."}), 400
+        ocr_results_path = process_presentation(file_path)
+        return jsonify({"message": "file uploaded successfully, OCR processing finished.", "ocr_results": ocr_results_path})
+    return jsonify({"error": "invalid file or no file uploaded."}), 400
 
 def process_presentation(file_path):
-    """ Converts PowerPoint to images and processes each image with OCR. """
+    """converts PowerPoint to images and processes each image with OCR"""
     image_folder = os.path.join(app.config['IMAGE_FOLDER'], uuid.uuid4().hex)
     os.makedirs(image_folder, exist_ok=True)
     convert_to_images(file_path, image_folder)
+    return process_images(image_folder)
 
 def convert_to_images(pptx_path, output_folder):
     # strip the original file extension and replace with .pdf
@@ -67,7 +70,7 @@ def convert_to_images(pptx_path, output_folder):
         logging.error("PDF file was not created.")
 
 def wait_for_file(file_path, timeout=30):
-    """Wait for a file to exist until timeout."""
+    """wait for a file to exist until timeout."""
     start_time = time.time()
     while True:
         if os.path.exists(file_path):
@@ -87,23 +90,31 @@ def convert_pdf_to_images(pdf_path, output_folder):
     if process.returncode != 0:
         logging.error("ImageMagick failed to convert PDF to images.")
     else:
-        logging.info(f"Converted {pdf_path} to images at {images_path_pattern}")
-        process_images(output_folder)
-
+        logging.info(f"converted {pdf_path} to images at {images_path_pattern}")
 
 def process_images(image_folder):
-    images = [os.path.join(image_folder, f) for f in os.listdir(image_folder) if f.endswith('.png')]
+    images = sorted([os.path.join(image_folder, f) for f in os.listdir(image_folder) if f.endswith('.png')], key=lambda x: int(x.split('_')[-1].split('.')[0]))
     if not images:
-        logging.error("No images found for OCR processing.")
-        return
+        logging.error("no images found for OCR processing.")
+        return None
 
-    with ProcessPoolExecutor() as executor:
-        results = list(executor.map(perform_ocr, images))
-        logging.info(f"OCR results: {results}")
+    logging.info(f"processing {len(images)} slides for OCR...")
+    results = []
+    for idx, image in enumerate(images):
+        logging.info(f"processing slide {idx + 1}...")
+        result = perform_ocr(image, idx)
+        results.append({"slide_number": idx + 1, "text": result})
 
-def perform_ocr(image_path):
+    # write OCR results to easily understandable schema for Mixtral hand off
+    output_file_path = os.path.join(app.config['OUTPUT_FOLDER'], f'{uuid.uuid4().hex}.json')
+    with open(output_file_path, 'w') as output_file:
+        json.dump(results, output_file, indent=4)
+
+    logging.info(f"OCR processing completed. Results saved to {output_file_path}")
+    return output_file_path
+
+def perform_ocr(image_path, slide_number):
     text = pytesseract.image_to_string(Image.open(image_path))
-    logging.info(f"OCR result for {image_path}: {text}")
     return text
 
 if __name__ == '__main__':
