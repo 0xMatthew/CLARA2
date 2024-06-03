@@ -3,65 +3,38 @@ import logging
 import json
 import uuid
 import subprocess
-import time
 from concurrent.futures import ProcessPoolExecutor, as_completed, TimeoutError
 from PIL import Image
 import pytesseract
 from config import Config
-from nvidia_api import process_with_nvidia_api
+from utils import wait_for_file
 
 def process_presentation(file_path):
-    """converts PowerPoint to images and processes each image with OCR"""
+    """Converts PowerPoint to images and processes each image with OCR"""
     image_folder = os.path.join(Config().IMAGE_FOLDER, uuid.uuid4().hex)
     os.makedirs(image_folder, exist_ok=True)
     convert_to_pdf(file_path, image_folder)
     ocr_results_path = process_images(image_folder)
 
-    # process with NVIDIA API using LangChain
-    with open(ocr_results_path, 'r') as f:
-        ocr_results = json.load(f)
-    
-    # full text for NVIDIA API
-    full_text = "\n".join([slide["text"] for slide in ocr_results])
-    nvidia_response = process_with_nvidia_api(ocr_results)
-    
-    # save the NVIDIA response
-    nvidia_output_path = os.path.join(Config().OUTPUT_FOLDER, f'{uuid.uuid4().hex}_nvidia_response.json')
-    with open(nvidia_output_path, 'w') as f:
-        json.dump(nvidia_response, f, indent=4)
-    
-    logging.info(f"NVIDIA API processing completed. results saved to {nvidia_output_path}")
-    
-    return nvidia_output_path
+    logging.info(f"OCR processing completed. Results saved to {ocr_results_path}")
+    return ocr_results_path
 
 def convert_to_pdf(pptx_path, output_folder):
-    # strip the original file extension and replace with .pdf
+    # Strip the original file extension and replace with .pdf
     base_name = os.path.basename(pptx_path)
     pdf_name = base_name.rsplit('.', 1)[0] + '.pdf'
     pdf_path = os.path.join(output_folder, pdf_name)
     
-    # convert PowerPoint to PDF specifying the output filename
+    # Convert PowerPoint to PDF specifying the output filename
     subprocess.run(['libreoffice', '--headless', '--convert-to', 'pdf', '--outdir', output_folder, pptx_path], capture_output=True)
     
-    # wait for the PDF to be available
+    # Wait for the PDF to be available
     pdf_ready = wait_for_file(pdf_path)
     
     if pdf_ready:
         convert_pdf_to_images(pdf_path, output_folder)
     else:
         logging.error("PDF file was not created.")
-
-def wait_for_file(file_path, timeout=30):
-    """wait for a file to exist until timeout."""
-    start_time = time.time()
-    while True:
-        if os.path.exists(file_path):
-            logging.info(f"File {file_path} found, proceeding with conversion.")
-            return True
-        elif (time.time() - start_time) > timeout:
-            logging.error(f"File {file_path} not found after {timeout} seconds.")
-            return False
-        time.sleep(1)  # sleep for a second before retrying
 
 def convert_pdf_to_images(pdf_path, output_folder):
     images_path_pattern = os.path.join(output_folder, "slide_%d.png")
@@ -72,18 +45,18 @@ def convert_pdf_to_images(pdf_path, output_folder):
     if process.returncode != 0:
         logging.error("ImageMagick failed to convert PDF to images.")
     else:
-        logging.info(f"converted {pdf_path} to images at {images_path_pattern}")
+        logging.info(f"Converted {pdf_path} to images at {images_path_pattern}")
 
 def process_images(image_folder):
     images = sorted([os.path.join(image_folder, f) for f in os.listdir(image_folder) if f.endswith('.png')], key=lambda x: int(x.split('_')[-1].split('.')[0]))
     if not images:
-        logging.error("no images found for OCR processing.")
+        logging.error("No images found for OCR processing.")
         return None
 
-    logging.info(f"processing {len(images)} slides for OCR...")
+    logging.info(f"Processing {len(images)} slides for OCR...")
 
     results = []
-    max_workers = min(8, os.cpu_count() - 1)  # limit the number of workers to avoid using too many threads/locking CPU usage at 100%
+    max_workers = min(8, os.cpu_count() - 1)  # Limit the number of workers to avoid using too many threads/locking CPU usage at 100%
     with ProcessPoolExecutor(max_workers=max_workers) as executor:
         futures = {executor.submit(perform_ocr, image, idx): idx for idx, image in enumerate(images)}
         for future in as_completed(futures):
@@ -91,20 +64,20 @@ def process_images(image_folder):
             try:
                 result = future.result(timeout=60)  # 60 seconds timeout for each OCR task
                 results.append(result)
-                logging.info(f"processed slide {idx + 1}")
+                logging.info(f"Processed slide {idx + 1}")
             except TimeoutError:
-                logging.error(f"processing slide {idx + 1} timed out.")
+                logging.error(f"Processing slide {idx + 1} timed out.")
             except Exception as e:
-                logging.error(f"error processing slide {idx + 1}: {e}")
+                logging.error(f"Error processing slide {idx + 1}: {e}")
 
     results.sort(key=lambda x: x['slide_number'])
 
-    # write OCR results to a JSON file
+    # Write OCR results to a JSON file
     output_file_path = os.path.join(Config().OUTPUT_FOLDER, f'{uuid.uuid4().hex}.json')
     with open(output_file_path, 'w') as output_file:
         json.dump(results, output_file, indent=4)
 
-    logging.info(f"OCR processing completed. results saved to {output_file_path}")
+    logging.info(f"OCR processing completed. Results saved to {output_file_path}")
     return output_file_path
 
 def perform_ocr(image_path, slide_number):
@@ -112,5 +85,5 @@ def perform_ocr(image_path, slide_number):
         text = pytesseract.image_to_string(Image.open(image_path))
         return {"slide_number": slide_number + 1, "text": text}
     except Exception as e:
-        logging.error(f"error performing OCR on slide {slide_number + 1}: {e}")
+        logging.error(f"Error performing OCR on slide {slide_number + 1}: {e}")
         return {"slide_number": slide_number + 1, "text": ""}

@@ -3,13 +3,13 @@ import json
 from langchain_nvidia_ai_endpoints import ChatNVIDIA
 from dotenv import load_dotenv
 
-# load NVIDIA API key from environment variables
+# Load NVIDIA API key from environment variables
 load_dotenv()
 NVIDIA_API_KEY = os.getenv("NVIDIA_API_KEY")
 
 def initialize_nvidia_api():
     if not NVIDIA_API_KEY or not NVIDIA_API_KEY.startswith("nvapi-"):
-        raise ValueError("invalid or missing NVIDIA API key")
+        raise ValueError("Invalid or missing NVIDIA API key")
 
     llm = ChatNVIDIA(model="mistralai/mixtral-8x22b-instruct-v0.1")
     return llm
@@ -17,7 +17,7 @@ def initialize_nvidia_api():
 def process_with_nvidia_api(ocr_results):
     llm = initialize_nvidia_api()
 
-    # preface prompt instructions with a request for more detailed output
+    # Preface prompt instructions with a request for more detailed output
     instructions = """
     You are an AI presenter. You will be given a JSON formatted input where each entry represents a slide from a PowerPoint presentation.
     Each slide entry will have a slide number and text content extracted via OCR.
