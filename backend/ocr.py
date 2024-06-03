@@ -8,24 +8,42 @@ from concurrent.futures import ProcessPoolExecutor, as_completed, TimeoutError
 from PIL import Image
 import pytesseract
 from config import Config
+from nvidia_api import process_with_nvidia_api
 
 def process_presentation(file_path):
     """converts PowerPoint to images and processes each image with OCR"""
     image_folder = os.path.join(Config().IMAGE_FOLDER, uuid.uuid4().hex)
     os.makedirs(image_folder, exist_ok=True)
     convert_to_pdf(file_path, image_folder)
-    return process_images(image_folder)
+    ocr_results_path = process_images(image_folder)
+
+    # process with NVIDIA API using LangChain
+    with open(ocr_results_path, 'r') as f:
+        ocr_results = json.load(f)
+    
+    # full text for NVIDIA API
+    full_text = "\n".join([slide["text"] for slide in ocr_results])
+    nvidia_response = process_with_nvidia_api(ocr_results)
+    
+    # save the NVIDIA response
+    nvidia_output_path = os.path.join(Config().OUTPUT_FOLDER, f'{uuid.uuid4().hex}_nvidia_response.json')
+    with open(nvidia_output_path, 'w') as f:
+        json.dump(nvidia_response, f, indent=4)
+    
+    logging.info(f"NVIDIA API processing completed. results saved to {nvidia_output_path}")
+    
+    return nvidia_output_path
 
 def convert_to_pdf(pptx_path, output_folder):
-    # Strip the original file extension and replace with .pdf
+    # strip the original file extension and replace with .pdf
     base_name = os.path.basename(pptx_path)
     pdf_name = base_name.rsplit('.', 1)[0] + '.pdf'
     pdf_path = os.path.join(output_folder, pdf_name)
     
-    # Convert PowerPoint to PDF specifying the output filename
+    # convert PowerPoint to PDF specifying the output filename
     subprocess.run(['libreoffice', '--headless', '--convert-to', 'pdf', '--outdir', output_folder, pptx_path], capture_output=True)
     
-    # Wait for the PDF to be available
+    # wait for the PDF to be available
     pdf_ready = wait_for_file(pdf_path)
     
     if pdf_ready:
@@ -81,7 +99,7 @@ def process_images(image_folder):
 
     results.sort(key=lambda x: x['slide_number'])
 
-    # Write OCR results to a JSON file
+    # write OCR results to a JSON file
     output_file_path = os.path.join(Config().OUTPUT_FOLDER, f'{uuid.uuid4().hex}.json')
     with open(output_file_path, 'w') as output_file:
         json.dump(results, output_file, indent=4)

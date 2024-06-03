@@ -4,7 +4,7 @@ import logging
 from utils import wait_for_file
 
 def convert_to_pdf(pptx_path, output_folder):
-    """Converts PowerPoint to PDF"""
+    """converts PowerPoint to PDF"""
     base_name = os.path.basename(pptx_path)
     pdf_name = base_name.rsplit('.', 1)[0] + '.pdf'
     pdf_path = os.path.join(output_folder, pdf_name)
