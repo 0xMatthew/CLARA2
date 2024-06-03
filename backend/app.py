@@ -8,6 +8,7 @@ from concurrent.futures import ProcessPoolExecutor
 import pytesseract
 from PIL import Image
 import logging
+import time
 
 # set up basic logging
 logging.basicConfig(level=logging.INFO)
@@ -49,23 +50,61 @@ def process_presentation(file_path):
     convert_to_images(file_path, image_folder)
 
 def convert_to_images(pptx_path, output_folder):
-    pdf_path = os.path.join(output_folder, "presentation.pdf")
-    subprocess.run(['libreoffice', '--headless', '--convert-to', 'pdf', pptx_path, '--outdir', output_folder], capture_output=True)
-    convert_pdf_to_images(pdf_path, output_folder)
+    # strip the original file extension and replace with .pdf
+    base_name = os.path.basename(pptx_path)
+    pdf_name = base_name.rsplit('.', 1)[0] + '.pdf'
+    pdf_path = os.path.join(output_folder, pdf_name)
+    
+    # convert PowerPoint to PDF specifying the output filename
+    subprocess.run(['libreoffice', '--headless', '--convert-to', 'pdf', '--outdir', output_folder, pptx_path], capture_output=True)
+    
+    # wait for the PDF to be available
+    pdf_ready = wait_for_file(pdf_path)
+    
+    if pdf_ready:
+        convert_pdf_to_images(pdf_path, output_folder)
+    else:
+        logging.error("PDF file was not created.")
+
+def wait_for_file(file_path, timeout=30):
+    """Wait for a file to exist until timeout."""
+    start_time = time.time()
+    while True:
+        if os.path.exists(file_path):
+            logging.info(f"File {file_path} found, proceeding with conversion.")
+            return True
+        elif (time.time() - start_time) > timeout:
+            logging.error(f"File {file_path} not found after {timeout} seconds.")
+            return False
+        time.sleep(1)  # sleep for a second before retrying
 
 def convert_pdf_to_images(pdf_path, output_folder):
     images_path_pattern = os.path.join(output_folder, "slide_%d.png")
-    subprocess.run(['convert', '-density', '150', pdf_path, images_path_pattern], capture_output=True)
-    process_images(output_folder)
+    process = subprocess.run(['convert', '-density', '150', pdf_path, images_path_pattern], capture_output=True)
+    logging.info(f"ImageMagick stdout: {process.stdout.decode('utf-8')}")
+    logging.info(f"ImageMagick stderr: {process.stderr.decode('utf-8')}")
+
+    if process.returncode != 0:
+        logging.error("ImageMagick failed to convert PDF to images.")
+    else:
+        logging.info(f"Converted {pdf_path} to images at {images_path_pattern}")
+        process_images(output_folder)
+
 
 def process_images(image_folder):
+    images = [os.path.join(image_folder, f) for f in os.listdir(image_folder) if f.endswith('.png')]
+    if not images:
+        logging.error("No images found for OCR processing.")
+        return
+
     with ProcessPoolExecutor() as executor:
-        images = [os.path.join(image_folder, f) for f in os.listdir(image_folder) if f.endswith('.png')]
         results = list(executor.map(perform_ocr, images))
         logging.info(f"OCR results: {results}")
 
 def perform_ocr(image_path):
-    return pytesseract.image_to_string(Image.open(image_path))
+    text = pytesseract.image_to_string(Image.open(image_path))
+    logging.info(f"OCR result for {image_path}: {text}")
+    return text
 
 if __name__ == '__main__':
     app.run(debug=True, port=5000)
