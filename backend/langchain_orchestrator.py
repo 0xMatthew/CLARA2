@@ -4,8 +4,8 @@ import uuid
 import logging
 from ocr import process_presentation
 from nvidia_api import process_with_nvidia_api
-# from google_tts import text_to_speech # uncomment this and comment out elevenlabs import if you prefer google_tts over elevenlabs
-from elevenlabs_tts import text_to_speech
+from google_tts import text_to_speech # uncomment this and comment out elevenlabs import if you prefer google_tts over elevenlabs
+# from elevenlabs_tts import text_to_speech # uncomment this and comment out google_tts import if you prefer elevenlabs over google_tts
 from azure_vision import get_image_analysis
 from config import Config
 from utils import wait_for_file
