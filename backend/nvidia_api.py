@@ -9,7 +9,7 @@ NVIDIA_API_KEY = os.getenv("NVIDIA_API_KEY")
 
 def initialize_nvidia_api():
     if not NVIDIA_API_KEY or not NVIDIA_API_KEY.startswith("nvapi-"):
-        raise ValueError("invalid or missing NVIDIA API key")
+        raise ValueError("Invalid or missing NVIDIA API key")
 
     llm = ChatNVIDIA(model="mistralai/mixtral-8x22b-instruct-v0.1")
     return llm
@@ -27,6 +27,7 @@ def process_with_nvidia_api(ocr_results):
     Please expand upon each slide with detailed explanations, historical context, examples, analogies, and any additional context that can make the presentation richer and more informative.
     Break down each point into smaller segments, discussing each aspect thoroughly.
     Be verbose and detailed in your explanations.
+    Your output for presentation_text and slide_number MUST correspond 1:1 with the slide_number from your input. YOU MUST NOT create more slides than there are in the source input.
     Your output should be in JSON format, with each slide's content under a corresponding slide number.
     Example input:
     [
@@ -41,5 +42,5 @@ def process_with_nvidia_api(ocr_results):
     """
     
     prompt = instructions + "\nInput:\n" + json.dumps(ocr_results, indent=4)
-    result = llm.invoke(prompt, temperature=0.7, top_p=0.9, max_tokens=4096)
+    result = llm.invoke(prompt, temperature=0.7, top_p=0.9, max_tokens=40536)
     return result.content

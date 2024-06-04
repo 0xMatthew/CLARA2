@@ -1,11 +1,12 @@
-from flask import Flask, request, jsonify, send_from_directory
-from flask_cors import CORS
-from werkzeug.utils import secure_filename
 import os
 import logging
 import uuid
+import json
+from flask import Flask, request, jsonify, send_from_directory
+from flask_cors import CORS
+from werkzeug.utils import secure_filename
 from config import Config
-from ocr import process_presentation
+from langchain_orchestrator import orchestrate_process
 
 # set up basic logging
 logging.basicConfig(level=logging.INFO)
@@ -35,8 +36,8 @@ def upload_file():
         filename = secure_filename(file.filename)
         file_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
         file.save(file_path)
-        ocr_results_path = process_presentation(file_path)
-        return jsonify({"message": "file uploaded successfully, OCR processing finished.", "ocr_results": ocr_results_path})
+        result = orchestrate_process(file_path, app.config['OUTPUT_FOLDER'])
+        return jsonify(result)
     return jsonify({"error": "invalid file or no file uploaded."}), 400
 
 if __name__ == '__main__':

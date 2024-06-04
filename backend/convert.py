@@ -16,9 +16,10 @@ def convert_to_pdf(pptx_path, output_folder):
     pdf_ready = wait_for_file(pdf_path)
     
     if pdf_ready:
-        convert_pdf_to_images(pdf_path, output_folder)
+        return pdf_path
     else:
         logging.error("PDF file was not created.")
+        return None
 
 def convert_pdf_to_images(pdf_path, output_folder):
     """converts PDF to images"""
