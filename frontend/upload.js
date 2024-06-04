@@ -14,7 +14,7 @@ document.getElementById('upload-form').addEventListener('submit', async function
             });
             
             if (!response.ok) {
-                throw new Error('Network response was not ok');
+                throw new Error('network response was not ok');
             }
 
             const result = await response.json();

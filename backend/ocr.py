@@ -8,32 +8,21 @@ from PIL import Image
 import pytesseract
 from config import Config
 from utils import wait_for_file
+from convert import convert_to_pdf  # import the function from convert.py
 
 def process_presentation(file_path):
     """converts PowerPoint to images and processes each image with OCR"""
     image_folder = os.path.join(Config().IMAGE_FOLDER, uuid.uuid4().hex)
     os.makedirs(image_folder, exist_ok=True)
-    convert_to_pdf(file_path, image_folder)
-    ocr_results_path = process_images(image_folder)
-
-    return ocr_results_path
-
-def convert_to_pdf(pptx_path, output_folder):
-    # strip the original file extension and replace with .pdf
-    base_name = os.path.basename(pptx_path)
-    pdf_name = base_name.rsplit('.', 1)[0] + '.pdf'
-    pdf_path = os.path.join(output_folder, pdf_name)
+    pdf_path = convert_to_pdf(file_path, image_folder)
     
-    # convert PowerPoint to PDF specifying the output filename
-    subprocess.run(['libreoffice', '--headless', '--convert-to', 'pdf', '--outdir', output_folder, pptx_path], capture_output=True)
-    
-    # wait for the PDF to be available
-    pdf_ready = wait_for_file(pdf_path)
-    
-    if pdf_ready:
-        convert_pdf_to_images(pdf_path, output_folder)
+    if pdf_path:
+        convert_pdf_to_images(pdf_path, image_folder)
+        ocr_results_path = process_images(image_folder)
+        return ocr_results_path, image_folder
     else:
-        logging.error("PDF file was not created.")
+        logging.error("failed to convert presentation to PDF.")
+        return None, None
 
 def convert_pdf_to_images(pdf_path, output_folder):
     images_path_pattern = os.path.join(output_folder, "slide_%d.png")
@@ -44,7 +33,7 @@ def convert_pdf_to_images(pdf_path, output_folder):
     if process.returncode != 0:
         logging.error("ImageMagick failed to convert PDF to images.")
     else:
-        logging.info(f"Converted {pdf_path} to images at {images_path_pattern}")
+        logging.info(f"converted {pdf_path} to images at {images_path_pattern}")
 
 def process_images(image_folder):
     images = sorted([os.path.join(image_folder, f) for f in os.listdir(image_folder) if f.endswith('.png')], key=lambda x: int(x.split('_')[-1].split('.')[0]))
@@ -52,7 +41,7 @@ def process_images(image_folder):
         logging.error("no images found for OCR processing.")
         return None
 
-    logging.info(f"Processing {len(images)} slides for OCR...")
+    logging.info(f"processing {len(images)} slides for OCR...")
 
     results = []
     max_workers = min(8, os.cpu_count() - 1)  # limit the number of workers to avoid using too many threads/locking CPU usage at 100%

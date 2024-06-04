@@ -1,20 +1,23 @@
 import os
 from google.cloud import texttospeech
 
-def text_to_speech(text, output_path):
+def text_to_speech(nvidia_response_json, output_path):
     # ensure the environment variable for Google credentials is set
     if "GOOGLE_APPLICATION_CREDENTIALS" not in os.environ:
         os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = "/path/to/your/service-account-file.json"
 
     client = texttospeech.TextToSpeechClient()
 
+    # extract text content from the JSON response
+    text = "\n".join([slide["presentation_text"] for slide in nvidia_response_json if "presentation_text" in slide])
+
     synthesis_input = texttospeech.SynthesisInput(text=text)
 
-    # use Wavenet voice for higher quality
+    # use Wavenet female voice for higher quality
     voice = texttospeech.VoiceSelectionParams(
         language_code="en-US",
-        name="en-US-Wavenet-D",
-        ssml_gender=texttospeech.SsmlVoiceGender.NEUTRAL
+        name="en-US-Wavenet-F",
+        ssml_gender=texttospeech.SsmlVoiceGender.FEMALE
     )
 
     # set the audio encoding to LINEAR16 for .wav format

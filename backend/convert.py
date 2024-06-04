@@ -20,15 +20,3 @@ def convert_to_pdf(pptx_path, output_folder):
     else:
         logging.error("PDF file was not created.")
         return None
-
-def convert_pdf_to_images(pdf_path, output_folder):
-    """converts PDF to images"""
-    images_path_pattern = os.path.join(output_folder, "slide_%d.png")
-    process = subprocess.run(['convert', '-density', '150', pdf_path, images_path_pattern], capture_output=True)
-    logging.info(f"ImageMagick stdout: {process.stdout.decode('utf-8')}")
-    logging.info(f"ImageMagick stderr: {process.stderr.decode('utf-8')}")
-
-    if process.returncode != 0:
-        logging.error("ImageMagick failed to convert PDF to images.")
-    else:
-        logging.info(f"converted {pdf_path} to images at {images_path_pattern}")
