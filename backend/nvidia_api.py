@@ -42,5 +42,5 @@ def process_with_nvidia_api(ocr_results):
     """
     
     prompt = instructions + "\nInput:\n" + json.dumps(ocr_results, indent=4)
-    result = llm.invoke(prompt, temperature=0.7, top_p=0.9, max_tokens=4096)
+    result = llm.invoke(prompt, temperature=0.7, top_p=0.9, max_tokens=40536)
     return result.content
