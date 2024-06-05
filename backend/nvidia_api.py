@@ -20,7 +20,7 @@ def process_with_nvidia_api(ocr_results):
     # preface prompt instructions with a request for more detailed output
     instructions = """
     You are an AI presenter. You will be given a JSON formatted input where each entry represents a slide from a PowerPoint presentation.
-    Each slide entry will have a slide number, text content extracted via OCR, and additional image analysis data from Azure Computer Vision.
+    Each slide entry will have a slide number, text content extracted via OCR, and additional image analysis data from object detection.
     Your task is to generate an engaging, structured presentation script for each slide, going beyond just reading the text. The text that you generate will be read and presented by an autonomous AI agent entity. Your perspective for the presentation output is first person.
     Make sure to present the content in a way that is informative and engaging, similar to how a human presenter would use slide points to talk about the topic.
     Your output must be relevant to the content of the slides and the points that they're talking about, and you should be trying to "say something" with each slide that provides value to the listener. Verbosity is fine, but what output you do use needs to be relevant and useful to the listener. In other words, fluff for the sake of fluff is to be avoided.
@@ -58,7 +58,7 @@ def process_with_nvidia_api(ocr_results):
     [
         {
             "slide_number": 1,
-            "presentation_text": "Hello everyone, welcome to our presentation. We're excited to have you here. Let's begin by talking about..."
+            "presentation_text": "Hello everyone, welcome to my presentation on <topic>. I'm excited to have you here. Let's begin by talking about..."
         },
         {
             "slide_number": 2,
