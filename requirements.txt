@@ -12,3 +12,9 @@ tiktoken
 azure-cognitiveservices-vision-computervision
 langchain
 azure-ai-vision-imageanalysis
+
+# YOLO dependencies
+ultralytics
+opencv-python-headless
+torch
+torchvision
