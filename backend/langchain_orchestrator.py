@@ -21,7 +21,7 @@ def orchestrate_process(file_path, output_folder):
 
     logging.info("ocr processing completed.")
     
-    # log the initial slide data (contains OCR results at this point)
+    # log the initial slide data (contains ocr results at this point)
     logging.debug("initial slide data with ocr results: %s", json.dumps(slide_data, indent=4))
     
     # process images with vision analysis and combine results
@@ -37,14 +37,14 @@ def orchestrate_process(file_path, output_folder):
             # add object detection data
             slide["image_analysis"] = {k: v for k, v in analysis.items() if k != "ocr_text"}  # remove redundant text field
             
-            # add OCR text if it is found in the analysis; otherwise, retain existing OCR text
+            # add ocr text if it is found in the analysis; otherwise, retain existing ocr text
             slide["text"] = analysis.get("ocr_text", slide["text"])
             logging.info(f"processing image {image_path} with vision analysis completed.")
         else:
             logging.error(f"image {image_path} not found or not created.")
             slide["image_analysis"] = {}
     
-    # log the combined slide data (now contains OCR and image analysis results)
+    # log the combined slide data (now contains ocr and image analysis results)
     logging.debug("combined slide data with ocr and image analysis results: %s", json.dumps(slide_data, indent=4))
     
     # save the combined results
