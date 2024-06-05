@@ -14,11 +14,11 @@ document.getElementById('upload-form').addEventListener('submit', async function
             });
             
             if (!response.ok) {
-                throw new Error('network response was not ok');
+                throw new Error('Network response was not ok');
             }
 
             const result = await response.json();
-            alert(`file uploaded successfully. NVIDIA API results saved at: ${result.ocr_results}`);
+            alert(`presentation audio successfully generated. check the outputs.`);
         } catch (error) {
             console.error('error during upload:', error);
             alert(`error during upload: ${error.message}`);
