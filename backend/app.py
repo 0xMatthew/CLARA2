@@ -9,7 +9,7 @@ from config import Config
 from langchain_orchestrator import orchestrate_process
 
 # set up basic logging
-logging.basicConfig(level=logging.INFO)
+logging.basicConfig(level=logging.DEBUG)
 
 app = Flask(__name__, static_url_path='', static_folder='../frontend')
 CORS(app)

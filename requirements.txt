@@ -3,7 +3,6 @@ flask-cors
 Werkzeug
 pytesseract
 Pillow
-concurrent.futures
 requests
 libreoffice
 imagemagick
@@ -18,3 +17,13 @@ ultralytics
 opencv-python-headless
 torch
 torchvision
+
+# PaddleOCR dependencies
+paddleocr
+paddlepaddle-gpu
+
+# Google Cloud TTS
+google-cloud-texttospeech
+
+# Eleven Labs TTS (if using Eleven Labs)
+elevenlabs

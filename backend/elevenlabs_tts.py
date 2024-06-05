@@ -14,17 +14,17 @@ def text_to_speech(nvidia_response_json, output_path):
     # Initialize Eleven Labs client
     client = ElevenLabs(api_key=os.environ["ELEVEN_API_KEY"])
 
-    # Generate speech
+    # generate speech
     try:
-        audio_stream = client.generate(text=text, voice="pwmzGNADICgKUeT5mH0W", model="eleven_monolingual_v1", stream=True)
+        audio_stream = client.generate(text=text, voice="dmKq6ijgI3SHcuovZXY7", model="eleven_multilingual_v2", stream=True)
         
-        # Save the generated audio to the specified path
+        # save the generated audio to the specified path
         with open(output_path, "wb") as out:
             for chunk in audio_stream:
                 out.write(chunk)
         print(f'audio content written to file {output_path}')
     except AttributeError as e:
-        print(f"Error: {e}")
+        print(f"error: {e}")
         print("the 'generate' method is not available in the current version of ElevenLabs.")
         print("please ensure you are using a compatible version of the ElevenLabs package.")
     except Exception as e:

@@ -2,6 +2,7 @@ import os
 import json
 from langchain_nvidia_ai_endpoints import ChatNVIDIA
 from dotenv import load_dotenv
+import logging
 
 # load NVIDIA API key from environment variables
 load_dotenv()
@@ -14,7 +15,7 @@ def initialize_nvidia_api():
     llm = ChatNVIDIA(model="mistralai/mixtral-8x22b-instruct-v0.1")
     return llm
 
-def process_with_nvidia_api(ocr_results):
+def process_with_nvidia_api(combined_analysis, max_tokens=40536):
     llm = initialize_nvidia_api()
 
     # preface prompt instructions with a request for more detailed output
@@ -30,43 +31,109 @@ def process_with_nvidia_api(ocr_results):
     Your output for presentation_text and slide_number MUST correspond 1:1 with the slide_number from your input. YOU MUST NOT create more slides than there are in the source input.
     Your output should be in JSON format, with each slide's content under a corresponding slide number.
     Example input:
+
+    The input JSON will have data from three models: OCR (optical character recognition), object detection, and layout analysis. The 'bbox' fields represent bounding boxes for detected elements, given as [x1, y1, x2, y2] coordinates, indicating the region of the slide where each element is located.
+    Example input:
     [
         {
             "slide_number": 1,
-            "text": "Welcome to the presentation.",
+            "ocr_text": "Database Concepts\n\nNinth Edition\n\nChapter 6\n\nDatabase Administration\n\nDavid M. Kroenke\nScott L. Vandenberg\nRobert C. Yoder\n\n@ Pearson Copyright 2020, 2017, 2015 Pearson Education, Inc. All Rights Reserved",
             "image_analysis": {
-                "description": "A welcome slide with text",
-                "tags": ["welcome", "presentation"],
-                "objects": ["text"],
-                "layout": "title: top, content: center",
-                "extracted_text": "Welcome to the presentation"
+                "object_detection_model_description": "Detected 1 objects.",
+                "object_detection_tags": [
+                    "person"
+                ],
+                "object_detection_objects": [
+                    {
+                        "name": "person",
+                        "confidence": 0.9626411199569702,
+                        "bbox": [
+                            215.86947631835938,
+                            155.97494506835938,
+                            873.6431274414062,
+                            705.0689086914062
+                        ]
+                    }
+                ],
+                "layout_analysis_results": [
+                    {
+                        "type": "title",
+                        "bbox": [50, 50, 700, 100],
+                        "text": [
+                            {
+                                "text": "Database Concepts",
+                                "confidence": 0.98,
+                                "text_region": [
+                                    [50, 50],
+                                    [700, 50],
+                                    [700, 100],
+                                    [50, 100]
+                                ]
+                            }
+                        ]
+                    },
+                    {
+                        "type": "text",
+                        "bbox": [50, 150, 700, 250],
+                        "text": [
+                            {
+                                "text": "Ninth Edition",
+                                "confidence": 0.95,
+                                "text_region": [
+                                    [50, 150],
+                                    [700, 150],
+                                    [700, 200],
+                                    [50, 200]
+                                ]
+                            }
+                        ]
+                    }
+                ]
             }
         },
         {
             "slide_number": 2,
-            "text": "Today's agenda includes...",
+            "ocr_text": "Learning Objectives (1 of 2)\n\nUnderstand the need for and importance of database administration\nKnow basic administrative and managerial DBA functions\nUnderstand the need for concurrency control, security, and backup and recovery\nLearn about typical problems that can occur when multiple users process a database concurrently\nUnderstand the use of locking and the problem of deadlock\nLearn the difference between optimistic and pessimistic locking\nKnow the meaning of ACID transaction\nLearn the four 1992 ANSI standard isolation levels\nLearn different ways of processing a database using cursors.",
             "image_analysis": {
-                "description": "An agenda slide",
-                "tags": ["agenda"],
-                "objects": ["text"],
-                "layout": "title: top, content: center",
-                "extracted_text": "Today's agenda includes..."
+                "object_detection_model_description": "Detected 0 objects.",
+                "object_detection_tags": [],
+                "object_detection_objects": [],
+                "layout_analysis_results": [
+                    {
+                        "type": "text",
+                        "bbox": [50, 150, 700, 800],
+                        "text": [
+                            {
+                                "text": "Understand the need for and importance of database administration",
+                                "confidence": 0.98,
+                                "text_region": [
+                                    [50, 150],
+                                    [700, 150],
+                                    [700, 200],
+                                    [50, 200]
+                                ]
+                            }
+                        ]
+                    }
+                ]
             }
         }
     ]
+    
     Example output:
     [
         {
             "slide_number": 1,
-            "presentation_text": "Hello everyone, welcome to my presentation on <topic>. I'm excited to have you here. Let's begin by talking about..."
+            "presentation_text": "Hello everyone, welcome to my presentation about <topic>. Let's begin by talking about the core concepts of database systems. In this session, we will dive into the world of databases, exploring their fundamental aspects and significance."
         },
         {
             "slide_number": 2,
-            "presentation_text": "Let's start with today's agenda. We will be covering the following topics... In detail, we will explore..."
+            "presentation_text": "Let's start with today's learning objectives. We aim to understand the importance of database administration and the basic functions involved. Additionally, we'll discuss the necessity of concurrency control, security, and backup and recovery. We'll also explore common issues that arise with concurrent database access and the strategies to handle them, such as locking mechanisms and the distinction between optimistic and pessimistic locking. Finally, we'll cover ACID transactions, standard isolation levels, and various methods for database processing using cursors."
         }
     ]
     """
-    
-    prompt = instructions + "\nInput:\n" + json.dumps(ocr_results, indent=4)
-    result = llm.invoke(prompt, temperature=0.7, top_p=0.9, max_tokens=40536)
+
+    prompt = instructions + "\nInput:\n" + json.dumps(combined_analysis, indent=4)
+    print("Mixtral prompt:", prompt)
+    result = llm.invoke(prompt, temperature=0.7, top_p=0.9, max_tokens=max_tokens)
     return result.content
