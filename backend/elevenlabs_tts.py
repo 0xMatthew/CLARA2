@@ -1,5 +1,4 @@
 import os
-import json
 from elevenlabs.client import ElevenLabs
 from langchain_community.tools.eleven_labs.text2speech import ElevenLabsText2SpeechTool
 

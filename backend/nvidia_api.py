@@ -2,7 +2,6 @@ import os
 import json
 from langchain_nvidia_ai_endpoints import ChatNVIDIA
 from dotenv import load_dotenv
-import logging
 
 # load NVIDIA API key from environment variables
 load_dotenv()

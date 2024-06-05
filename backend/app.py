@@ -1,7 +1,5 @@
 import os
 import logging
-import uuid
-import json
 from flask import Flask, request, jsonify, send_from_directory
 from flask_cors import CORS
 from werkzeug.utils import secure_filename

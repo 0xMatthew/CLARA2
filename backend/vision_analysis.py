@@ -1,7 +1,5 @@
 import os
-import json
 import cv2
-import torch
 from ultralytics import YOLO
 import pytesseract
 from paddleocr import PPStructure, PaddleOCR
