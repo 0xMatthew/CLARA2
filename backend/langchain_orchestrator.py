@@ -9,6 +9,7 @@ from google_tts import text_to_speech as google_text_to_speech
 from vision_analysis import get_image_analysis
 from config import Config
 from utils import wait_for_file
+from audio2face_module import push_audio_to_audio2face  # Import the function
 
 def orchestrate_process(file_path, output_folder):
     logging.info("starting orchestration process for file: %s", file_path)
@@ -78,6 +79,13 @@ def orchestrate_process(file_path, output_folder):
     # elevenlabs_text_to_speech(nvidia_response_json, audio_path)  # uncomment this if using elevenlabs tts
     
     logging.info("tts processing completed. audio file saved to: %s", audio_path)
+    
+    # push the audio to audio2face
+    instance_name = "/World/audio2face/PlayerStreaming"  # Use the correct instance name
+    host_ip_address = os.getenv('HOST_IP_ADDRESS', 'localhost')  # Ensure the HOST_IP_ADDRESS environment variable is set
+    push_audio_to_audio2face(audio_path, instance_name, url=f"{host_ip_address}:50051")
+
+    logging.info("audio pushed to audio2face.")
     
     # return the results
     return {
