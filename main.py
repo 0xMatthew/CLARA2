@@ -42,13 +42,17 @@ def generate_mixtral_text(slide_data, output_folder):
     return nvidia_response_json
 
 def generate_tts_per_slide(nvidia_response_json, output_folder, pptx_filename):
+    audio_filenames = []
     for slide in nvidia_response_json:
         slide_number = slide["slide_number"]
         audio_filename = f"{pptx_filename[:10]}-slide_audio{slide_number}.wav"
         audio_path = os.path.join(output_folder, audio_filename)
         logging.debug(f"generating tts for slide {slide_number} to {audio_path}")
         google_text_to_speech([slide], audio_path)
+        slide["audio_filename"] = audio_filename
+        audio_filenames.append(audio_filename)
     logging.info("tts processing completed for all slides.")
+    return audio_filenames
 
 def orchestrate_process(file_path, output_folder):
     logging.info(f"starting orchestration process for file: {file_path}")
@@ -58,7 +62,7 @@ def orchestrate_process(file_path, output_folder):
     slide_data, image_folder = process_presentation(file_path)
     
     if slide_data is None:
-        return {"error": "failed to process presentation for ocr."}, None
+        return {"error": "failed to process presentation for ocr."}
 
     logging.info("ocr processing completed.")
     
@@ -86,7 +90,7 @@ def orchestrate_process(file_path, output_folder):
     
     nvidia_response_json = generate_mixtral_text(slide_data, output_folder)
     
-    generate_tts_per_slide(nvidia_response_json, output_folder, pptx_filename)
+    audio_filenames = generate_tts_per_slide(nvidia_response_json, output_folder, pptx_filename)
     
     for slide in nvidia_response_json:
         slide_number = slide["slide_number"]
@@ -101,14 +105,15 @@ def orchestrate_process(file_path, output_folder):
         
         logging.info(f"audio for slide {slide_number} pushed to audio2face.")
         
-        delay = 3
-        logging.info(f"sleeping for {delay} seconds.")
-        
-        time.sleep(delay)
-    
     logging.info("all slides processed and audio pushed to audio2face.")
     
-    return slide_data, image_folder
+    return {
+        "message": "presentation audio successfully generated and processed.",
+        "combined_analysis": combined_analysis_path,
+        "nvidia_response": nvidia_response_json,
+        "slides": nvidia_response_json,
+        "image_folder": image_folder
+    }
 
 if __name__ == "__main__":
     file_path = 'backend/uploads/KROENKE_3_SLIDES.pptx'

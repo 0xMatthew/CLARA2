@@ -39,20 +39,15 @@ def upload_file():
         filename = secure_filename(file.filename)
         file_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
         file.save(file_path)
-        slide_data, image_folder = orchestrate_process(file_path, app.config['OUTPUT_FOLDER'])
-        if slide_data and image_folder:
-            return jsonify({
-                "slides": slide_data,
-                "image_folder": image_folder
-            })
-        return jsonify({"error": "processing error"}), 500
+        result = orchestrate_process(file_path, app.config['OUTPUT_FOLDER'])
+        if "error" in result:
+            return jsonify({"error": result["error"]}), 400
+        return jsonify(result)
     return jsonify({"error": "invalid file or no file uploaded."}), 400
 
-@app.route('/images/<path:folder>/<path:filename>')
-def serve_image(folder, filename):
-    full_path = os.path.join(Config.IMAGE_FOLDER, folder)
-    logging.info(f"serving image from {full_path}/{filename}")
-    return send_from_directory(full_path, filename)
+@app.route('/images/<path:filename>')
+def serve_image(filename):
+    return send_from_directory(app.config['IMAGE_FOLDER'], filename)
 
 if __name__ == '__main__':
     app.run(debug=True, port=5000)
