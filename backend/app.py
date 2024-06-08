@@ -6,6 +6,12 @@ from werkzeug.utils import secure_filename
 from config import Config
 from langchain_orchestrator import orchestrate_process
 
+# ensure necessary directories exist
+os.makedirs(Config.OUTPUT_FOLDER, exist_ok=True)
+os.makedirs(Config.UPLOAD_FOLDER, exist_ok=True)
+os.makedirs(Config.IMAGE_FOLDER, exist_ok=True)
+os.makedirs('models', exist_ok=True)
+
 # set up basic logging
 logging.basicConfig(level=logging.DEBUG)
 
@@ -13,7 +19,6 @@ app = Flask(__name__, static_url_path='', static_folder='../frontend')
 CORS(app)
 
 app.config.from_object(Config)
-os.makedirs(app.config['OUTPUT_FOLDER'], exist_ok=True)
 
 @app.route('/')
 def index():

@@ -17,6 +17,7 @@ model_url = 'https://github.com/ultralytics/assets/releases/download/v8.2.0/yolo
 def download_model(url, path):
     from urllib.request import urlretrieve
     logging.info(f"downloading model from {url} to {path}...")
+    os.makedirs(os.path.dirname(path), exist_ok=True)  # ensure the directory exists
     urlretrieve(url, path)
 
 def initialize_yolo():
