@@ -8,9 +8,7 @@ libreoffice
 imagemagick
 python-dotenv
 tiktoken
-azure-cognitiveservices-vision-computervision
 langchain
-azure-ai-vision-imageanalysis
 
 # YOLO dependencies
 ultralytics

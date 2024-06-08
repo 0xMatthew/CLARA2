@@ -4,9 +4,38 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>CLARA2 PowerPoint upload</title>
+    <style>
+        body {
+            background-color: #000000;
+            color: #FFFFFF;
+            font-family: Arial, sans-serif;
+        }
+        h1 {
+            color: #FFFFFF;
+        }
+        form {
+            margin-top: 20px;
+        }
+        input[type="file"] {
+            color: #FFFFFF;
+            background-color: #333333;
+            border: 1px solid #FFFFFF;
+            padding: 5px;
+        }
+        button {
+            color: #000000;
+            background-color: #FFFFFF;
+            border: 1px solid #FFFFFF;
+            padding: 10px 20px;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #CCCCCC;
+        }
+    </style>
 </head>
 <body>
-    <h1>presentation upload</h1>
+    <h1>presentation Upload</h1>
     <form id="upload-form" enctype="multipart/form-data">
         <input type="file" id="file-input" name="presentation" accept=".pptx" required>
         <button type="submit">upload PowerPoint</button>
