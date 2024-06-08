@@ -3,14 +3,14 @@ import logging
 from flask import Flask, request, jsonify, send_from_directory
 from flask_cors import CORS
 from werkzeug.utils import secure_filename
-from config import Config
-from langchain_orchestrator import orchestrate_process
+from backend.config import Config
+from main import orchestrate_process  # Import orchestrate_process from main.py
 
 # ensure necessary directories exist
 os.makedirs(Config.OUTPUT_FOLDER, exist_ok=True)
 os.makedirs(Config.UPLOAD_FOLDER, exist_ok=True)
 os.makedirs(Config.IMAGE_FOLDER, exist_ok=True)
-os.makedirs('models', exist_ok=True)
+os.makedirs(Config.MODELS_FOLDER, exist_ok=True)
 
 # set up basic logging
 logging.basicConfig(level=logging.DEBUG)

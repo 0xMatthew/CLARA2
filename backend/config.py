@@ -1,9 +1,10 @@
 import os
 
 class Config:
-    UPLOAD_FOLDER = 'uploads'
-    IMAGE_FOLDER = 'images'
-    OUTPUT_FOLDER = 'outputs'
+    UPLOAD_FOLDER = os.path.join(os.path.dirname(__file__), '../uploads')
+    IMAGE_FOLDER = os.path.join(os.path.dirname(__file__), '../images')
+    OUTPUT_FOLDER = os.path.join(os.path.dirname(__file__), '../outputs')
+    MODELS_FOLDER = os.path.join(os.path.dirname(__file__), '../models')
     MAX_CONTENT_LENGTH = 16 * 1024 * 1024  # 16MB limit
     
     GOOGLE_APPLICATION_CREDENTIALS = '/path/to/your/service-account-file.json'
