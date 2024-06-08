@@ -17,10 +17,10 @@ ocr_logger = logging.getLogger('ppocr')
 ocr_logger.setLevel(logging.WARNING)  # suppress debug logs from paddleocr
 
 # ensure necessary directories exist
-os.makedirs(Config.IMAGE_FOLDER, exist_ok=True)
 os.makedirs(Config.OUTPUT_FOLDER, exist_ok=True)
 os.makedirs(Config.UPLOAD_FOLDER, exist_ok=True)
-os.makedirs('backend/models', exist_ok=True)
+os.makedirs(Config.IMAGE_FOLDER, exist_ok=True)
+os.makedirs(Config.MODELS_FOLDER, exist_ok=True)
 
 def generate_mixtral_text(slide_data, output_folder):
     combined_analysis = slide_data

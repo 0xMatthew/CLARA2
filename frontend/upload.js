@@ -18,7 +18,6 @@ document.getElementById('upload-form').addEventListener('submit', async function
             }
 
             const result = await response.json();
-            alert(`presentation audio successfully generated. check the outputs.`);
         } catch (error) {
             console.error('error during upload:', error);
             alert(`error during upload: ${error.message}`);

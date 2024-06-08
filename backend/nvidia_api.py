@@ -133,6 +133,6 @@ def process_with_nvidia_api(combined_analysis, max_tokens=40536):
     """
 
     prompt = instructions + "\nInput:\n" + json.dumps(combined_analysis, indent=4)
-    print("Mixtral prompt:", prompt)
+    print("Mixtral prompt:", prompt[:3000], "<...>")
     result = llm.invoke(prompt, temperature=0.7, top_p=0.9, max_tokens=max_tokens)
     return result.content
