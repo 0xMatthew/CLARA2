@@ -32,6 +32,12 @@
         button:hover {
             background-color: #CCCCCC;
         }
+        .slides-container {
+            margin-top: 20px;
+        }
+        .slide {
+            margin: 10px 0;
+        }
     </style>
 </head>
 <body>
@@ -40,6 +46,8 @@
         <input type="file" id="file-input" name="presentation" accept=".pptx" required>
         <button type="submit">upload PowerPoint</button>
     </form>
+
+    <div class="slides-container" id="slides-container"></div>
 
     <script src="upload.js"></script>
 </body>

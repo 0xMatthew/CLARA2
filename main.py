@@ -9,7 +9,7 @@ from backend.google_tts import text_to_speech as google_text_to_speech
 from backend.vision_analysis import get_image_analysis
 from backend.config import Config
 from backend.utils import wait_for_file
-from backend.audio2face_module import push_audio_to_audio2face  # import the function
+from backend.audio2face_module import push_audio_to_audio2face
 
 # set up logging
 logging.basicConfig(level=logging.INFO)
@@ -58,7 +58,7 @@ def orchestrate_process(file_path, output_folder):
     slide_data, image_folder = process_presentation(file_path)
     
     if slide_data is None:
-        return {"error": "failed to process presentation for ocr."}
+        return {"error": "failed to process presentation for ocr."}, None
 
     logging.info("ocr processing completed.")
     
@@ -108,11 +108,7 @@ def orchestrate_process(file_path, output_folder):
     
     logging.info("all slides processed and audio pushed to audio2face.")
     
-    return {
-        "message": "presentation audio successfully generated and processed.",
-        "combined_analysis": combined_analysis_path,
-        "nvidia_response": nvidia_response_json
-    }
+    return slide_data, image_folder
 
 if __name__ == "__main__":
     file_path = 'backend/uploads/KROENKE_3_SLIDES.pptx'
