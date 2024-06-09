@@ -9,7 +9,7 @@ from backend.google_tts import text_to_speech as google_text_to_speech
 from backend.vision_analysis import get_image_analysis
 from backend.config import Config
 from backend.utils import wait_for_file
-from backend.audio2face_module import push_audio_to_audio2face  # import the function
+from backend.audio2face_module import push_audio_to_audio2face
 
 # set up logging
 logging.basicConfig(level=logging.INFO)
@@ -22,33 +22,18 @@ os.makedirs(Config.UPLOAD_FOLDER, exist_ok=True)
 os.makedirs(Config.IMAGE_FOLDER, exist_ok=True)
 os.makedirs(Config.MODELS_FOLDER, exist_ok=True)
 
-def generate_mixtral_text(slide_data, output_folder):
-    combined_analysis = slide_data
-    nvidia_response = process_with_nvidia_api(combined_analysis)
-    
-    logging.debug(f"nvidia api response: {nvidia_response}")
-    
+def process_batch(slide_data_batch, output_folder, pptx_filename, batch_num):
     try:
-        nvidia_response_json = json.loads(nvidia_response, strict=False)
-    except json.JSONDecodeError as e:
-        logging.error(f"failed to decode nvidia api response: {e}")
-        return {"error": "nvidia api processing failed"}
-    
-    nvidia_output_path = os.path.join(output_folder, f'{uuid.uuid4().hex}_nvidia_response.json')
-    with open(nvidia_output_path, 'w') as f:
-        json.dump(nvidia_response_json, f, indent=4)
-    logging.info(f"nvidia api processing completed. results saved to: {nvidia_output_path}")
-    
-    return nvidia_response_json
+        nvidia_response_json = json.loads(process_with_nvidia_api(slide_data_batch))
+        if "error" in nvidia_response_json:
+            logging.error(f"error processing batch {batch_num}: {nvidia_response_json['error']}")
+            return
 
-def generate_tts_per_slide(nvidia_response_json, output_folder, pptx_filename):
-    for slide in nvidia_response_json:
-        slide_number = slide["slide_number"]
-        audio_filename = f"{pptx_filename[:10]}-slide_audio{slide_number}.wav"
-        audio_path = os.path.join(output_folder, audio_filename)
-        logging.debug(f"generating tts for slide {slide_number} to {audio_path}")
-        google_text_to_speech([slide], audio_path)
-    logging.info("tts processing completed for all slides.")
+        generate_tts_per_slide(nvidia_response_json, output_folder, pptx_filename)
+    except json.JSONDecodeError as e:
+        logging.error(f"JSON decode error during batch processing: {e}")
+    except Exception as e:
+        logging.error(f"Failed to process batch {batch_num}: {e}")
 
 def orchestrate_process(file_path, output_folder):
     logging.info(f"starting orchestration process for file: {file_path}")
@@ -58,11 +43,9 @@ def orchestrate_process(file_path, output_folder):
     slide_data, image_folder = process_presentation(file_path)
     
     if slide_data is None:
-        return {"error": "failed to process presentation for ocr."}
+        return {"error": "failed to process presentation for OCR."}
 
-    logging.info("ocr processing completed.")
-    
-    logging.debug(f"initial slide data with ocr results: {json.dumps(slide_data, indent=4)}")
+    logging.info("OCR processing completed.")
     
     for slide in slide_data:
         slide_number = slide["slide_number"]
@@ -76,43 +59,33 @@ def orchestrate_process(file_path, output_folder):
         else:
             logging.error(f"image {image_path} not found or not created.")
             slide["image_analysis"] = {}
-    
-    logging.debug(f"combined slide data with ocr and image analysis results: {json.dumps(slide_data, indent=4)}")
-    
-    combined_analysis_path = os.path.join(output_folder, f'{uuid.uuid4().hex}_combined_analysis.json')
-    with open(combined_analysis_path, 'w') as f:
-        json.dump(slide_data, f, indent=4)
-    logging.info(f"combined ocr and image analysis results saved to: {combined_analysis_path}")
-    
-    nvidia_response_json = generate_mixtral_text(slide_data, output_folder)
-    
-    generate_tts_per_slide(nvidia_response_json, output_folder, pptx_filename)
-    
+
+    # batch processing
+    batch_size = 5
+    num_batches = (len(slide_data) + batch_size - 1) // batch_size
+
+    for batch_num in range(num_batches):
+        slide_data_batch = slide_data[batch_num * batch_size:(batch_num + 1) * batch_size]
+        process_batch(slide_data_batch, output_folder, pptx_filename, batch_num)
+
+    logging.info("all batches processing completed.")
+
+    return {
+        "message": "presentation audio generation and processing completed.",
+        "status": "completed",
+    }
+
+def generate_tts_per_slide(nvidia_response_json, output_folder, pptx_filename):
     for slide in nvidia_response_json:
         slide_number = slide["slide_number"]
         audio_filename = f"{pptx_filename[:10]}-slide_audio{slide_number}.wav"
         audio_path = os.path.join(output_folder, audio_filename)
-        
-        logging.info(f"pushing audio for slide {slide_number} to audio2face.")
-        
-        instance_name = "/World/audio2face/PlayerStreaming"
-        host_ip_address = os.getenv('HOST_IP_ADDRESS', 'localhost')
-        push_audio_to_audio2face(audio_path, instance_name, url=f"{host_ip_address}:50051")
-        
-        logging.info(f"audio for slide {slide_number} pushed to audio2face.")
-        
-        delay = 3
-        logging.info(f"sleeping for {delay} seconds.")
-        
-        time.sleep(delay)
-    
-    logging.info("all slides processed and audio pushed to audio2face.")
-    
-    return {
-        "message": "presentation audio successfully generated and processed.",
-        "combined_analysis": combined_analysis_path,
-        "nvidia_response": nvidia_response_json
-    }
+        logging.debug(f"generating TTS for slide {slide_number} to {audio_path}")
+        google_text_to_speech([slide], audio_path)
+        logging.info(f"generated audio for slide {slide_number} at {audio_path}")
+        # Push audio to Audio2Face
+        push_audio_to_audio2face(audio_path, "/World/audio2face/PlayerStreaming")
+    logging.info("TTS processing completed for all slides.")
 
 if __name__ == "__main__":
     file_path = 'backend/uploads/KROENKE_3_SLIDES.pptx'

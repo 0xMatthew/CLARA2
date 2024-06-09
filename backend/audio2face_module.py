@@ -14,6 +14,10 @@ logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(
 host_ip = os.getenv('HOST_IP_ADDRESS')
 def push_audio_to_audio2face(audio_path, instance_name, url=f"{host_ip}:50051"):
     try:
+        if not os.path.exists(audio_path):
+            logging.error(f"audio file {audio_path} does not exist.")
+            return
+        
         data, samplerate = soundfile.read(audio_path, dtype='float32')
         if data.ndim > 1:
             data = np.mean(data, axis=1)
