@@ -24,7 +24,7 @@ app.config.from_object(Config)
 
 @app.route('/')
 def index():
-    """serve the index.html file"""
+    """Serve the index.html file"""
     return send_from_directory(app.static_folder, 'index.html')
 
 @app.route('/upload.js')
@@ -48,15 +48,18 @@ def upload_file():
 @app.route('/stop-audio2face', methods=['POST'])
 def stop_audio2face():
     try:
-        # Command to find the process ID and kill it
-        find_cmd = ['pgrep', '-f', 'audio2face_headless.bat']
-        pid = subprocess.check_output(find_cmd).strip().decode('utf-8')
+        # Command to find the process ID of kit.exe and kill it
+        find_cmd = 'cmd.exe /C "tasklist /FI "IMAGENAME eq kit.exe" /FO CSV /NH"'
+        output = subprocess.check_output(find_cmd, shell=True).decode('utf-8').strip().split('\r\n')
         
-        kill_cmd = ['kill', '-9', pid]
-        subprocess.run(kill_cmd, check=True)
+        for line in output:
+            if line:
+                pid = line.split(',')[1].strip('"')
+                kill_cmd = ['cmd.exe', '/C', f'taskkill /PID {pid} /F']
+                subprocess.run(kill_cmd, check=True)
         
         # Command to start a new instance of audio2face
-        start_cmd = 'cmd.exe "/mnt/c/Users/Matthew/AppData/Local/ov/pkg/audio2face-2023.2.0/audio2face_headless.bat"'
+        start_cmd = 'cmd.exe /C "C:\\Users\\Matthew\\AppData\\Local\\ov\\pkg\\audio2face-2023.2.0\\audio2face_headless.bat"'
         subprocess.Popen(start_cmd, shell=True)
         
         # Allow some time for the audio2face to initialize
