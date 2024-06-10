@@ -14,7 +14,7 @@ document.getElementById('upload-form').addEventListener('submit', async function
             });
             
             if (!response.ok) {
-                throw new Error('Network response was not ok');
+                throw new Error('network response was not ok');
             }
 
             const result = await response.json();
@@ -24,5 +24,23 @@ document.getElementById('upload-form').addEventListener('submit', async function
         }
     } else {
         alert('please select a PowerPoint file to upload.');
+    }
+});
+
+document.getElementById('stop-button').addEventListener('click', async function() {
+    try {
+        const response = await fetch('/stop-audio2face', {
+            method: 'POST'
+        });
+
+        if (!response.ok) {
+            throw new Error('network response was not ok');
+        }
+
+        const result = await response.json();
+        alert(result.message);
+    } catch (error) {
+        console.error('error stopping Audio2Face:', error);
+        alert(`error stopping Audio2Face: ${error.message}`);
     }
 });

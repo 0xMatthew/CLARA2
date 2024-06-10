@@ -1,5 +1,7 @@
 import os
 import logging
+import subprocess
+import time
 from flask import Flask, request, jsonify, send_from_directory
 from flask_cors import CORS
 from werkzeug.utils import secure_filename
@@ -41,7 +43,45 @@ def upload_file():
         file.save(file_path)
         result = orchestrate_process(file_path, app.config['OUTPUT_FOLDER'])
         return jsonify(result)
-    return jsonify({"error": "invalid file or no file uploaded."}), 400
+    return jsonify({"error": "Invalid file or no file uploaded."}), 400
+
+@app.route('/stop-audio2face', methods=['POST'])
+def stop_audio2face():
+    try:
+        # Command to find the process ID and kill it
+        find_cmd = ['pgrep', '-f', 'audio2face_headless.bat']
+        pid = subprocess.check_output(find_cmd).strip().decode('utf-8')
+        
+        kill_cmd = ['kill', '-9', pid]
+        subprocess.run(kill_cmd, check=True)
+        
+        # Command to start a new instance of audio2face
+        start_cmd = 'cmd.exe "/mnt/c/Users/Matthew/AppData/Local/ov/pkg/audio2face-2023.2.0/audio2face_headless.bat"'
+        subprocess.Popen(start_cmd, shell=True)
+        
+        # Allow some time for the audio2face to initialize
+        time.sleep(10)
+        
+        # Send the curl command to configure audio2face
+        curl_cmd = [
+            'curl', '-X', 'POST',
+            f'http://{os.getenv("HOST_IP_ADDRESS")}:8011/A2F/USD/Load',
+            '-H', 'accept: application/json',
+            '-H', 'Content-Type: application/json',
+            '-d', '{"file_name": "C:/Users/Matthew/Documents/Desktop/CLARA2/unreal_streaming.usd"}'
+        ]
+        subprocess.run(curl_cmd, check=True)
+        
+        return jsonify({"message": "Audio2Face restarted successfully."})
+    except subprocess.CalledProcessError as e:
+        logging.error(f"Error stopping or starting Audio2Face: {e}")
+        return jsonify({"error": f"Failed to restart Audio2Face: {e}"}), 500
+    except subprocess.SubprocessError as e:
+        logging.error(f"Subprocess error: {e}")
+        return jsonify({"error": f"Failed to restart Audio2Face: {e}"}), 500
+    except Exception as e:
+        logging.error(f"Unexpected error: {e}")
+        return jsonify({"error": f"An unexpected error occurred: {e}"}), 500
 
 if __name__ == '__main__':
     app.run(debug=True, port=5000)

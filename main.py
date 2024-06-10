@@ -88,6 +88,6 @@ def generate_tts_per_slide(nvidia_response_json, output_folder, pptx_filename):
     logging.info("TTS processing completed for all slides.")
 
 if __name__ == "__main__":
-    file_path = 'backend/uploads/KROENKE_3_SLIDES.pptx'
-    output_folder = 'backend/outputs'
+    file_path = os.path.join(Config.UPLOAD_FOLDER, 'your_test_file.pptx')
+    output_folder = Config.OUTPUT_FOLDER
     orchestrate_process(file_path, output_folder)
