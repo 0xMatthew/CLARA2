@@ -6,7 +6,7 @@ from flask import Flask, request, jsonify, send_from_directory
 from flask_cors import CORS
 from werkzeug.utils import secure_filename
 from backend.config import Config
-from main import orchestrate_process  # Import orchestrate_process from main.py
+from main import orchestrate_process
 
 # ensure necessary directories exist
 os.makedirs(Config.OUTPUT_FOLDER, exist_ok=True)
@@ -22,6 +22,13 @@ CORS(app)
 
 app.config.from_object(Config)
 
+# track the current state of processing
+processing_state = {
+    "is_processing": False,
+    "should_continue": True,
+    "current_slide": 0
+}
+
 @app.route('/')
 def index():
     """Serve the index.html file"""
@@ -36,12 +43,18 @@ def allowed_file(filename):
 
 @app.route('/upload', methods=['POST'])
 def upload_file():
+    if processing_state["is_processing"]:
+        return jsonify({"error": "already processing a file."}), 400
+
     file = request.files['presentation']
     if file and allowed_file(file.filename):
         filename = secure_filename(file.filename)
         file_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
         file.save(file_path)
-        result = orchestrate_process(file_path, app.config['OUTPUT_FOLDER'])
+        processing_state["is_processing"] = True
+        processing_state["should_continue"] = True
+        result = orchestrate_process(file_path, app.config['OUTPUT_FOLDER'], processing_state)
+        processing_state["is_processing"] = False
         return jsonify(result)
     return jsonify({"error": "Invalid file or no file uploaded."}), 400
 
@@ -75,6 +88,11 @@ def stop_audio2face():
         ]
         subprocess.run(curl_cmd, check=True)
         
+        # reset the processing state
+        processing_state["is_processing"] = False
+        processing_state["should_continue"] = False
+        processing_state["current_slide"] = 0
+
         return jsonify({"message": "Audio2Face restarted successfully."})
     except subprocess.CalledProcessError as e:
         logging.error(f"Error stopping or starting Audio2Face: {e}")

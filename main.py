@@ -14,7 +14,7 @@ from backend.audio2face_module import push_audio_to_audio2face
 # set up logging
 logging.basicConfig(level=logging.INFO)
 ocr_logger = logging.getLogger('ppocr')
-ocr_logger.setLevel(logging.WARNING)  # suppress debug logs from paddleocr
+ocr_logger.setLevel(logging.WARNING)  # Suppress debug logs from paddleocr
 
 # ensure necessary directories exist
 os.makedirs(Config.OUTPUT_FOLDER, exist_ok=True)
@@ -22,20 +22,24 @@ os.makedirs(Config.UPLOAD_FOLDER, exist_ok=True)
 os.makedirs(Config.IMAGE_FOLDER, exist_ok=True)
 os.makedirs(Config.MODELS_FOLDER, exist_ok=True)
 
-def process_batch(slide_data_batch, output_folder, pptx_filename, batch_num):
+def process_batch(slide_data_batch, output_folder, pptx_filename, batch_num, state):
+    if not state["should_continue"]:
+        logging.info(f"Processing stopped at batch {batch_num}")
+        return
+    
     try:
         nvidia_response_json = json.loads(process_with_nvidia_api(slide_data_batch))
         if "error" in nvidia_response_json:
             logging.error(f"error processing batch {batch_num}: {nvidia_response_json['error']}")
             return
 
-        generate_tts_per_slide(nvidia_response_json, output_folder, pptx_filename)
+        generate_tts_per_slide(nvidia_response_json, output_folder, pptx_filename, state)
     except json.JSONDecodeError as e:
         logging.error(f"JSON decode error during batch processing: {e}")
     except Exception as e:
         logging.error(f"Failed to process batch {batch_num}: {e}")
 
-def orchestrate_process(file_path, output_folder):
+def orchestrate_process(file_path, output_folder, state):
     logging.info(f"starting orchestration process for file: {file_path}")
     
     pptx_filename = os.path.basename(file_path)
@@ -48,6 +52,10 @@ def orchestrate_process(file_path, output_folder):
     logging.info("OCR processing completed.")
     
     for slide in slide_data:
+        if not state["should_continue"]:
+            logging.info("processing stopped.")
+            return {"message": "processing stopped.", "status": "stopped"}
+
         slide_number = slide["slide_number"]
         image_path = os.path.join(image_folder, f"slide_{slide_number - 1}.png")
         
@@ -65,18 +73,27 @@ def orchestrate_process(file_path, output_folder):
     num_batches = (len(slide_data) + batch_size - 1) // batch_size
 
     for batch_num in range(num_batches):
+        if not state["should_continue"]:
+            logging.info("Processing stopped.")
+            return {"message": "processing stopped.", "status": "stopped"}
+        
         slide_data_batch = slide_data[batch_num * batch_size:(batch_num + 1) * batch_size]
-        process_batch(slide_data_batch, output_folder, pptx_filename, batch_num)
+        process_batch(slide_data_batch, output_folder, pptx_filename, batch_num, state)
 
     logging.info("all batches processing completed.")
+    state["current_slide"] = len(slide_data)  # update the state to reflect the completion
 
     return {
         "message": "presentation audio generation and processing completed.",
         "status": "completed",
     }
 
-def generate_tts_per_slide(nvidia_response_json, output_folder, pptx_filename):
+def generate_tts_per_slide(nvidia_response_json, output_folder, pptx_filename, state):
     for slide in nvidia_response_json:
+        if not state["should_continue"]:
+            logging.info("processing stopped.")
+            return
+
         slide_number = slide["slide_number"]
         audio_filename = f"{pptx_filename[:10]}-slide_audio{slide_number}.wav"
         audio_path = os.path.join(output_folder, audio_filename)
@@ -90,4 +107,9 @@ def generate_tts_per_slide(nvidia_response_json, output_folder, pptx_filename):
 if __name__ == "__main__":
     file_path = os.path.join(Config.UPLOAD_FOLDER, 'your_test_file.pptx')
     output_folder = Config.OUTPUT_FOLDER
-    orchestrate_process(file_path, output_folder)
+    state = {
+        "is_processing": False,
+        "should_continue": True,
+        "current_slide": 0
+    }
+    orchestrate_process(file_path, output_folder, state)
