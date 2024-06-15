@@ -72,7 +72,7 @@ If you want a more detailed technical breakdown of how CLARA 2 works, check out 
 That's it for setup! Now, let's use CLARA 2:
 
 1. If you haven't already, install WSL Ubuntu.
-2. Set the following environment variables:
+2. Set at least one of following environment variables so that CLARA 2 can use TTS:
 
     ```bash
       export GOOGLE_APPLICATION_CREDENTIALS="/path/to/your/service-account-file.json"
