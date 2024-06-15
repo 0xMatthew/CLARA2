@@ -46,7 +46,7 @@ If you want a more detailed technical breakdown of how CLARA 2 works, check out 
       -H 'accept: application/json' \
       -H 'Content-Type: application/json' \
       -d '{
-      "file_name": "<windows_drive_letter>:/<your_path_to_this_repo>unreal_streaming.usd"
+      "file_name": "<windows_drive_letter>:/<your_path_to_this_repo>/config_files/unreal_streaming.usd"
     }'
     ```
 
