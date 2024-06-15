@@ -1,4 +1,4 @@
-# CLARA 2 (Comprehensive Learning And Review Agent)
+# CLARA 2 (**C**omprehensive **L**earning **A**nd **R**eview **A**gent)
 
 CLARA 2 allows users to create AI presentations from a PowerPoint file.
 
