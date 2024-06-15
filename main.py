@@ -6,6 +6,7 @@ import time
 from backend.ocr import process_presentation
 from backend.nvidia_api import process_with_nvidia_api
 from backend.google_tts import text_to_speech as google_text_to_speech
+# from backend.elevenlabs_tts import text_to_speech as elevenlabs_text_to_speech # uncomment this line if you want to use ElevenLabs for TTS
 from backend.vision_analysis import get_image_analysis
 from backend.config import Config
 from backend.utils import wait_for_file
@@ -14,7 +15,7 @@ from backend.audio2face_module import push_audio_to_audio2face
 # set up logging
 logging.basicConfig(level=logging.INFO)
 ocr_logger = logging.getLogger('ppocr')
-ocr_logger.setLevel(logging.WARNING)  # suppress debug logs from paddleocr
+ocr_logger.setLevel(logging.WARNING)  # Suppress debug logs from paddleocr
 
 # ensure necessary directories exist
 os.makedirs(Config.OUTPUT_FOLDER, exist_ok=True)
@@ -22,39 +23,24 @@ os.makedirs(Config.UPLOAD_FOLDER, exist_ok=True)
 os.makedirs(Config.IMAGE_FOLDER, exist_ok=True)
 os.makedirs(Config.MODELS_FOLDER, exist_ok=True)
 
-def generate_mixtral_text(slide_data, output_folder):
-    combined_analysis = slide_data
-    nvidia_response = process_with_nvidia_api(combined_analysis)
-    
-    logging.debug(f"nvidia api response: {nvidia_response}")
+def process_batch(slide_data_batch, output_folder, pptx_filename, batch_num, state):
+    if not state["should_continue"]:
+        logging.info(f"Processing stopped at batch {batch_num}")
+        return
     
     try:
-        nvidia_response_json = json.loads(nvidia_response, strict=False)
+        nvidia_response_json = json.loads(process_with_nvidia_api(slide_data_batch))
+        if "error" in nvidia_response_json:
+            logging.error(f"error processing batch {batch_num}: {nvidia_response_json['error']}")
+            return
+
+        generate_tts_per_slide(nvidia_response_json, output_folder, pptx_filename, state)
     except json.JSONDecodeError as e:
-        logging.error(f"failed to decode nvidia api response: {e}")
-        return {"error": "nvidia api processing failed"}
-    
-    nvidia_output_path = os.path.join(output_folder, f'{uuid.uuid4().hex}_nvidia_response.json')
-    with open(nvidia_output_path, 'w') as f:
-        json.dump(nvidia_response_json, f, indent=4)
-    logging.info(f"nvidia api processing completed. results saved to: {nvidia_output_path}")
-    
-    return nvidia_response_json
+        logging.error(f"JSON decode error during batch processing: {e}")
+    except Exception as e:
+        logging.error(f"Failed to process batch {batch_num}: {e}")
 
-def generate_tts_per_slide(nvidia_response_json, output_folder, pptx_filename):
-    audio_filenames = []
-    for slide in nvidia_response_json:
-        slide_number = slide["slide_number"]
-        audio_filename = f"{pptx_filename[:10]}-slide_audio{slide_number}.wav"
-        audio_path = os.path.join(output_folder, audio_filename)
-        logging.debug(f"generating tts for slide {slide_number} to {audio_path}")
-        google_text_to_speech([slide], audio_path)
-        slide["audio_filename"] = audio_filename
-        audio_filenames.append(audio_filename)
-    logging.info("tts processing completed for all slides.")
-    return audio_filenames
-
-def orchestrate_process(file_path, output_folder):
+def orchestrate_process(file_path, output_folder, state):
     logging.info(f"starting orchestration process for file: {file_path}")
     
     pptx_filename = os.path.basename(file_path)
@@ -62,13 +48,15 @@ def orchestrate_process(file_path, output_folder):
     slide_data, image_folder = process_presentation(file_path)
     
     if slide_data is None:
-        return {"error": "failed to process presentation for ocr."}
+        return {"error": "failed to process presentation for OCR."}
 
-    logging.info("ocr processing completed.")
-    
-    logging.debug(f"initial slide data with ocr results: {json.dumps(slide_data, indent=4)}")
+    logging.info("OCR processing completed.")
     
     for slide in slide_data:
+        if not state["should_continue"]:
+            logging.info("processing stopped.")
+            return {"message": "processing stopped.", "status": "stopped"}
+
         slide_number = slide["slide_number"]
         image_path = os.path.join(image_folder, f"slide_{slide_number - 1}.png")
         
@@ -80,42 +68,50 @@ def orchestrate_process(file_path, output_folder):
         else:
             logging.error(f"image {image_path} not found or not created.")
             slide["image_analysis"] = {}
-    
-    logging.debug(f"combined slide data with ocr and image analysis results: {json.dumps(slide_data, indent=4)}")
-    
-    combined_analysis_path = os.path.join(output_folder, f'{uuid.uuid4().hex}_combined_analysis.json')
-    with open(combined_analysis_path, 'w') as f:
-        json.dump(slide_data, f, indent=4)
-    logging.info(f"combined ocr and image analysis results saved to: {combined_analysis_path}")
-    
-    nvidia_response_json = generate_mixtral_text(slide_data, output_folder)
-    
-    audio_filenames = generate_tts_per_slide(nvidia_response_json, output_folder, pptx_filename)
-    
+
+    # batch processing
+    batch_size = 5
+    num_batches = (len(slide_data) + batch_size - 1) // batch_size
+
+    for batch_num in range(num_batches):
+        if not state["should_continue"]:
+            logging.info("Processing stopped.")
+            return {"message": "processing stopped.", "status": "stopped"}
+        
+        slide_data_batch = slide_data[batch_num * batch_size:(batch_num + 1) * batch_size]
+        process_batch(slide_data_batch, output_folder, pptx_filename, batch_num, state)
+
+    logging.info("all batches processing completed.")
+    state["current_slide"] = len(slide_data)  # update the state to reflect the completion
+
+    return {
+        "message": "presentation audio generation and processing completed.",
+        "status": "completed",
+    }
+
+def generate_tts_per_slide(nvidia_response_json, output_folder, pptx_filename, state):
     for slide in nvidia_response_json:
+        if not state["should_continue"]:
+            logging.info("processing stopped.")
+            return
+
         slide_number = slide["slide_number"]
         audio_filename = f"{pptx_filename[:10]}-slide_audio{slide_number}.wav"
         audio_path = os.path.join(output_folder, audio_filename)
-        
-        logging.info(f"pushing audio for slide {slide_number} to audio2face.")
-        
-        instance_name = "/World/audio2face/PlayerStreaming"
-        host_ip_address = os.getenv('HOST_IP_ADDRESS', 'localhost')
-        push_audio_to_audio2face(audio_path, instance_name, url=f"{host_ip_address}:50051")
-        
-        logging.info(f"audio for slide {slide_number} pushed to audio2face.")
-        
-    logging.info("all slides processed and audio pushed to audio2face.")
-    
-    return {
-        "message": "presentation audio successfully generated and processed.",
-        "combined_analysis": combined_analysis_path,
-        "nvidia_response": nvidia_response_json,
-        "slides": nvidia_response_json,
-        "image_folder": image_folder
-    }
+        logging.debug(f"generating TTS for slide {slide_number} to {audio_path}")
+        google_text_to_speech([slide], audio_path)
+        #elevenlabs_text_to_speech([slide], audio_path) # uncomment this line and remove the google_text_to_speech call above in order to use ElevenLabs TTS in place of Google TTS
+        logging.info(f"generated audio for slide {slide_number} at {audio_path}")
+        # Push audio to Audio2Face
+        push_audio_to_audio2face(audio_path, "/World/audio2face/PlayerStreaming")
+    logging.info("TTS processing completed for all slides.")
 
 if __name__ == "__main__":
-    file_path = 'backend/uploads/KROENKE_3_SLIDES.pptx'
-    output_folder = 'backend/outputs'
-    orchestrate_process(file_path, output_folder)
+    file_path = os.path.join(Config.UPLOAD_FOLDER, 'your_test_file.pptx')
+    output_folder = Config.OUTPUT_FOLDER
+    state = {
+        "is_processing": False,
+        "should_continue": True,
+        "current_slide": 0
+    }
+    orchestrate_process(file_path, output_folder, state)

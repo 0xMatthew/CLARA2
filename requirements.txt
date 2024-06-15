@@ -4,11 +4,13 @@ Werkzeug
 pytesseract
 Pillow
 requests
-libreoffice
+libreoffice-python
 imagemagick
 python-dotenv
 tiktoken
 langchain
+grpcio
+protobuf
 
 # YOLO dependencies
 ultralytics

@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CLARA2 PowerPoint upload</title>
+    <title>CLARA 2</title>
     <style>
         body {
             background-color: #000000;
@@ -32,23 +32,15 @@
         button:hover {
             background-color: #CCCCCC;
         }
-        .slides-container {
-            margin-top: 20px;
-        }
-        .slide {
-            margin: 10px 0;
-        }
     </style>
 </head>
 <body>
-    <h1>presentation Upload</h1>
+    <h1>Presentation Upload</h1>
     <form id="upload-form" enctype="multipart/form-data">
         <input type="file" id="file-input" name="presentation" accept=".pptx" required>
-        <button type="submit">upload PowerPoint</button>
+        <button type="submit">upload</button>
     </form>
-
-    <div class="slides-container" id="slides-container"></div>
-
+    <button id="stop-button">stop and restart Audio2Face</button>
     <script src="upload.js"></script>
 </body>
 </html>
