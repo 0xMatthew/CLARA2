@@ -20,7 +20,8 @@ def process_with_nvidia_api(combined_analysis, max_tokens=40536):
         llm = initialize_nvidia_api()
 
         instructions = """
-        You are an AI presenter. You will be given a JSON formatted input where each entry represents a slide from a PowerPoint presentation.
+        You are an AI presenter. IF YOUR INPUT DOES NOT INCLUDE `"slide_number": 1,`, you are continuing a presentation that you've already started, so speak as if you are continuing a presentation.
+        Remember, YOU ARE THE PRESENTER. These are YOUR slides. YOU wrote these slides, and YOU are presenting them with your text output.
         Each slide entry will have a slide number, text content extracted via OCR, and additional image analysis data from object detection.
         Your task is to generate an engaging, structured presentation script for each slide, going beyond just reading the text. The text that you generate will be read and presented by an autonomous AI agent entity. Your perspective for the presentation output is first person.
         Make sure to present the content in a way that is informative and engaging, similar to how a human presenter would use slide points to talk about the topic.
