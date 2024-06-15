@@ -3,4 +3,5 @@ images/
 outputs/
 __pycache__/
 models/
-/transcriptions
+transcriptions/
+**/flask_output.log

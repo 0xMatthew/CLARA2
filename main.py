@@ -6,6 +6,7 @@ import time
 from backend.ocr import process_presentation
 from backend.nvidia_api import process_with_nvidia_api
 from backend.google_tts import text_to_speech as google_text_to_speech
+# from backend.elevenlabs_tts import text_to_speech as elevenlabs_text_to_speech # uncomment this line if you want to use ElevenLabs for TTS
 from backend.vision_analysis import get_image_analysis
 from backend.config import Config
 from backend.utils import wait_for_file
@@ -99,6 +100,7 @@ def generate_tts_per_slide(nvidia_response_json, output_folder, pptx_filename, s
         audio_path = os.path.join(output_folder, audio_filename)
         logging.debug(f"generating TTS for slide {slide_number} to {audio_path}")
         google_text_to_speech([slide], audio_path)
+        #elevenlabs_text_to_speech([slide], audio_path) # uncomment this line and remove the google_text_to_speech call above in order to use ElevenLabs TTS in place of Google TTS
         logging.info(f"generated audio for slide {slide_number} at {audio_path}")
         # Push audio to Audio2Face
         push_audio_to_audio2face(audio_path, "/World/audio2face/PlayerStreaming")
