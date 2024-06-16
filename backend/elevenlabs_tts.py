@@ -15,7 +15,7 @@ def text_to_speech(nvidia_response_json, output_path):
 
     # generate speech
     try:
-        audio_stream = client.generate(text=text, voice="pwmzGNADICgKUeT5mH0W", model="eleven_multilingual_v2", stream=True)
+        audio_stream = client.generate(text=text, voice="voice_id_you_want_to_use", model="eleven_multilingual_v2", stream=True)
         
         # save the generated audio to the specified path
         with open(output_path, "wb") as out:
