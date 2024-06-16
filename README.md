@@ -9,6 +9,7 @@ CLARA 2 is my submission for the [Generative AI Agents Developer Contest by NVID
 - CLARA 2 uses a Langchain-orchestrated NVIDIA NIM `mixtral-8x22b` API call to process data extracted from PowerPoint slides.
 - The Mixtral response is passed to a Google/ElevenLabs TTS, and the generated `.wav` audio is in turn passed to Audio2Face.
 - Audio2Face, using LiveLink, streams the audio and animation data into Unreal Engine 5 to generate a real-time rendition of an AI MetaHuman presenter.
+- Thanks to LangChain’s role in abstracting NVIDIA NIM API calls, CLARA 2's LLM can easily be swapped out with minimal changes to the source code. In other words, as LLMs get bigger, better, and faster, so can CLARA 2.
 
 Check out the quick demo video for CLARA 2 here:
 
@@ -38,6 +39,21 @@ If you want a more detailed technical breakdown of how CLARA 2 works, check out 
     ![audio2face_headless.bat](docs/image-3.png)
 
 6. Launch Unreal Engine `CLARA2.exe` binary.
+
+- NOTE: `CLARA2.exe`, where all the configuration you see in the demo video is baked into the build, is not packaged with this repo. If you want to set up CLARA 2 on your own rig/with your own MetaHuman, you'll need to:
+
+  - create your own MetaHuman here: metahuman.unrealengine.com
+  - install Unreal Engine 5.3
+  - install the following Unreal Engine plugins:
+  
+    - Audio2Face
+    - LiveLink
+    - MetaHuman
+
+  - import your created MetaHuman using Quixel Bridge and selecting `My Metahumans`
+
+  - configure LiveLink to listen for Audio2Face within your LiveLink settings
+
 7. Now that Audio2Face is running in Windows and the Unreal Engine `CLARA.exe` running and listening using LiveLink, send the following requests to the A2F server REST endpoints using `curl` or your favorite HTTP request tool:
 
     ```bash
