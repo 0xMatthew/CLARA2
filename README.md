@@ -91,18 +91,20 @@ That's it for setup! Now, let's use CLARA 2:
 2. Set at least one of following environment variables so that CLARA 2 can use TTS:
 
     ```bash
-      export GOOGLE_APPLICATION_CREDENTIALS="/path/to/your/service-account-file.json"
-      export ELEVEN_API_KEY="your_elevenlabs_api_key"
+    export GOOGLE_APPLICATION_CREDENTIALS="/path/to/your/service-account-file.json"
+    export ELEVEN_API_KEY="your_elevenlabs_api_key"
     ```
 
 3. Install the required Ubuntu packages:
 
     ```bash
-      sudo apt update
-      sudo apt install -y libgl1-mesa-glx libglib2.0-0 libsm6 libxrender1 libfontconfig1 tesseract-ocr libreoffice imagemagick
+    sudo apt update
+    sudo apt install -y libgl1-mesa-glx libglib2.0-0 libsm6 libxrender1 libfontconfig1 tesseract-ocr libreoffice imagemagick
     ```
 
-4. Using WSL Ubuntu, navigate to the root directory of this repo, and run the following commands in Bash to launch CLARA 2:
+4. Install the required python packages by running the following in the CLARA2 directory: `pip install -r requirements.txt`
+
+5. Using WSL Ubuntu, navigate to the root directory of this repo, and run the following commands in Bash to launch CLARA 2:
 
 - `chmod +x CLARA2.sh`
 - `./CLARA2.sh`
