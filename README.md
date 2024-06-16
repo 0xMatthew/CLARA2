@@ -11,7 +11,7 @@ CLARA 2 is my submission for the [Generative AI Agents Developer Contest by NVID
 - Audio2Face, using LiveLink, streams the audio and animation data into Unreal Engine 5 to generate a real-time rendition of an AI MetaHuman presenter.
 - Thanks to LangChain’s role in abstracting NVIDIA NIM API calls, CLARA 2's LLM can easily be swapped out with minimal changes to the source code. In other words, as LLMs get bigger, better, and faster, so can CLARA 2.
 
-Check out the quick demo video for CLARA 2 here:
+Check out the quick demo video for CLARA 2 here: [Demo Video](https://www.linkedin.com/posts/matthew-yaeger_nvidiadevcontest-langchain-activity-7208193448867237888-jOKy)
 
 - **Fun fact**: the AI CLARA 2 presenter in the demo video is the mesh and voice of the real Clara that this project was named after!
 
