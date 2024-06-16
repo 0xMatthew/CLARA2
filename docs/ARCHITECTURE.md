@@ -2,7 +2,7 @@
 
 ## Architecture Overview
 
-CLARA 2 converts PowerPoint presentations into an AI-driven presentation by using OCR/object recognition, LangChain-orchestrated NVIDIA NIM Mixtral 8x22B API calls, text-to-speech, and animation systems. This document provides a detailed technical breakdown of the architecture and the workflow of CLARA 2.
+CLARA 2 converts PowerPoint presentations into an AI-driven presentation by using machine vision to perform OCR/document layout recognition/object recognition (tesseract, PaddleOCR, YOLO respectively), LangChain-orchestrated NVIDIA NIM Mixtral 8x22B API calls, text-to-speech by ElevenLabs/Google TTS, and Audio2Face with LiveLink for streaming to an Unreal Engine MetaHuman. This document provides a detailed technical breakdown of the architecture and that workflow of CLARA 2 on a file-by-file basis.
 
 ### Components
 
