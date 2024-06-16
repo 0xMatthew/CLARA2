@@ -13,7 +13,7 @@ CLARA 2 is my submission for the [Generative AI Agents Developer Contest by NVID
 
 Check out the quick demo video for CLARA 2 here:
 
-- **Fun fact**: the AI CLARA 2 presenter in the demo video is the mesh, face texture, and voice of the real Clara that this project was named after!
+- **Fun fact**: the AI CLARA 2 presenter in the demo video is the mesh and voice of the real Clara that this project was named after!
 
 If you want a more detailed technical breakdown of how CLARA 2 works, check out [ARCHITECTURE.md](docs/ARCHITECTURE.md).
 
