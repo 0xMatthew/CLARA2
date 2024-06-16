@@ -19,7 +19,7 @@ If you want a more detailed technical breakdown of how CLARA 2 works, check out 
 
 ## Quickstart
 
-**Pre-requisites**: Windows OS, WSL Ubuntu
+**Pre-requisites**: Windows OS, WSL Ubuntu, Python 3.11.9 (other minor/micro versions will likely work, but I have only tested 3.11.9)
 
 1. Install Audio2Face from NVIDIA Omniverse.
 2. Launch Audio2Face as a headless server by clicking the hamburger icon pictured below:
@@ -85,14 +85,16 @@ If you want a more detailed technical breakdown of how CLARA 2 works, check out 
     }'
     ```
 
-That's it for setup! Now, let's use CLARA 2:
+That's it for initial setup! Now, let's get to using CLARA 2:
 
-1. If you haven't already, install WSL Ubuntu.
-2. Set at least one of following environment variables so that CLARA 2 can use TTS:
+1. If you haven't already, install WSL Ubuntu and Python 3.11.9.
+2. Set the following environment variables in your current shell OR in `.bashrc` so that CLARA 2 can use TTS, the NVIDIA NIM API, and so that the Python modules are aware of one another:
 
     ```bash
-    export GOOGLE_APPLICATION_CREDENTIALS="/path/to/your/service-account-file.json"
-    export ELEVEN_API_KEY="your_elevenlabs_api_key"
+    export GOOGLE_APPLICATION_CREDENTIALS="/path/to/your/service-account-file.json" # use this for Google TTS
+    export ELEVEN_API_KEY="your_elevenlabs_api_key" # use this for ElevenLabs TTS
+    export NVIDIA_API_KEY="your_NVIDIA_NIM_API_key"
+    export PYTHONPATH=$PYTHONPATH:/<your_linux_path_to_this_CLARA2_repo>
     ```
 
 3. Install the required Ubuntu packages:
